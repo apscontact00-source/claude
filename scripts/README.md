@@ -37,17 +37,24 @@ python scripts/scan_niches.py --list-catalogs
 
 ```bash
 python scripts/scan_niches.py --catalog-id 1206
-# options : --min-favs 20  --max-age-days 21  --min-articles 3  --known-file known.txt
+# options : --min-favs 20  --max-age-days 21  --min-price 150  --min-articles 3  --known-file known.txt
 ```
 
 - `--known-file` : un fichier texte, une marque par ligne, des niches déjà dans Notion
   (à écarter). `/prime` peut le générer depuis la page Notion.
 
-## ⚠️ Réseau
+## ⚠️ Réseau & compte
 
-Vinted doit être **joignable depuis la machine qui lance le script**. Dans un environnement
-sandbox à réseau restreint (comme Claude Code sur le web), l'accès à `vinted.fr` peut être
-bloqué : lance alors le script sur ta machine locale.
+- **Aucun compte Vinted requis.** Le script ouvre une **session anonyme** (il récupère un token
+  anonyme sur la home, comme une fenêtre de navigation privée). Pas de login, pas de mot de passe.
+- Mais Vinted doit être **joignable depuis la machine qui lance le script**. Dans un environnement
+  sandbox à réseau restreint (Claude Code sur le web), tout le domaine `vinted.fr` est bloqué au
+  niveau du proxy (403) — l'anonymat n'y change rien : lance alors le script sur ta machine locale.
+
+## Où atterrissent les sacs de luxe
+
+Le scan des sacs de luxe se range dans la page Notion **« Sacs de luxe »** (sous *Niche China*) :
+`https://app.notion.com/p/39c2c750db1e8118af23cb660869b321`
 
 ## Cron (100 % sans IA, optionnel)
 

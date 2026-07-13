@@ -27,8 +27,8 @@ Pose-moi, en une fois, les choix suivants (propose des valeurs par défaut sens�
    resell (premium, forte marge : ex. manteaux/doudounes homme, maroquinerie, bottes femme, montres).
    Si je ne connais pas l'ID, propose de lancer `python scripts/scan_niches.py --list-catalogs`
    ou de coller une URL Vinted (l'ID est dans `?catalog[]=NNNN`).
-2. **Filtres** — défaut : **≥ 20 favoris**, **< 3 semaines**, **≥ 3 articles/marque**. Demande si je
-   veux ajuster.
+2. **Filtres** — défaut : **≥ 20 favoris**, **< 3 semaines**, **≥ 3 articles/marque**, et un
+   **prix minimum** (`--min-price`, ex. 150 € pour du luxe). Demande si je veux ajuster.
 3. **Écrire dans Notion, ou juste prévisualiser** (dry-run) ?
 
 Attends mes réponses avant de continuer.
@@ -37,7 +37,7 @@ Attends mes réponses avant de continuer.
 
 ```bash
 python scripts/scan_niches.py --catalog-id <ID> --known-file out/known.txt \
-  [--min-favs N] [--max-age-days N] [--min-articles N]
+  [--min-favs N] [--max-age-days N] [--min-price N] [--min-articles N]
 ```
 Le script sort `out/niches-<ID>-<date>.json` + `.md`. Ne ré-analyse pas les annonces toi-même :
 tout est dans le JSON. Si Vinted est injoignable (réseau restreint), dis-le-moi et arrête-toi —

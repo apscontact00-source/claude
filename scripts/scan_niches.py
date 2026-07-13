@@ -38,6 +38,7 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 # --- Critères par défaut (surchargables en CLI) -----------------------------
 MIN_FAVS = 20            # un article doit avoir >= 20 favoris
 MAX_AGE_DAYS = 21        # ... et dater de moins de 3 semaines
+MIN_PRICE = 0            # ... et coûter au moins ce prix (0 = pas de filtre)
 MIN_ARTICLES = 3         # une marque = niche si >= 3 articles chauds
 MAX_PAGES = 8            # garde-fou pagination
 
@@ -115,21 +116,24 @@ def item_price(item: dict) -> float | None:
 
 
 def scan(catalog_id: int, min_favs: int, max_age_days: int,
-         max_pages: int) -> list[dict]:
-    """Renvoie la liste des articles CHAUDS (>= min_favs favoris, < max_age_days)."""
+         max_pages: int, min_price: float = 0) -> list[dict]:
+    """Renvoie la liste des articles CHAUDS (>= min_favs favoris, < max_age_days, >= min_price)."""
     s = new_session()
     cutoff = time.time() - max_age_days * 86400
     hot: list[dict] = []
     stale_streak = 0
 
     for page in range(1, max_pages + 1):
+        params = {
+            "catalog_ids": catalog_id,
+            "order": "newest_first",
+            "per_page": 96,
+            "page": page,
+        }
+        if min_price:
+            params["price_from"] = min_price  # pré-filtre côté Vinted
         try:
-            data = get_json(s, "/api/v2/catalog/items", {
-                "catalog_ids": catalog_id,
-                "order": "newest_first",
-                "per_page": 96,
-                "page": page,
-            })
+            data = get_json(s, "/api/v2/catalog/items", params)
         except Exception as e:  # une page qui tombe ne casse pas le run
             print(f"  ! page {page} échouée : {e}", file=sys.stderr)
             break
@@ -152,11 +156,15 @@ def scan(catalog_id: int, min_favs: int, max_age_days: int,
             if int(it.get("favourite_count", 0)) < min_favs:
                 continue
 
+            price = item_price(it)
+            if min_price and (price is None or price < min_price):
+                continue  # trop bon marché pour du luxe
+
             hot.append({
                 "id": it.get("id"),
                 "brand": (it.get("brand_title") or "Sans marque").strip(),
                 "title": it.get("title"),
-                "price": item_price(it),
+                "price": price,
                 "favourites": int(it.get("favourite_count", 0)),
                 "url": it.get("url"),
                 "photo": (it.get("photo") or {}).get("url"),
@@ -257,6 +265,7 @@ def main() -> None:
     ap.add_argument("--list-catalogs", action="store_true", help="Affiche l'arbre des catégories et quitte.")
     ap.add_argument("--min-favs", type=int, default=MIN_FAVS)
     ap.add_argument("--max-age-days", type=int, default=MAX_AGE_DAYS)
+    ap.add_argument("--min-price", type=float, default=MIN_PRICE, help="Prix minimum en € (ex: 150).")
     ap.add_argument("--min-articles", type=int, default=MIN_ARTICLES)
     ap.add_argument("--max-pages", type=int, default=MAX_PAGES)
     ap.add_argument("--known-file", help="Fichier des marques déjà connues (1 par ligne) à écarter.")
@@ -271,8 +280,9 @@ def main() -> None:
         ap.error("--catalog-id requis (ou utilise --list-catalogs pour le trouver).")
 
     print(f"Scan catalog {args.catalog_id} — filtres : ≥{args.min_favs} favoris, "
-          f"<{args.max_age_days}j, ≥{args.min_articles} articles/marque")
-    hot = scan(args.catalog_id, args.min_favs, args.max_age_days, args.max_pages)
+          f"<{args.max_age_days}j, ≥{args.min_price:.0f}€, ≥{args.min_articles} articles/marque")
+    hot = scan(args.catalog_id, args.min_favs, args.max_age_days,
+               args.max_pages, args.min_price)
     print(f"  {len(hot)} article(s) chaud(s) trouvé(s).")
 
     known = load_known(args.known_file)
