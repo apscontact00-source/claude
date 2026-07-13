@@ -1,93 +1,63 @@
 ---
-description: Scan de niches resell et ajout automatique dans Notion "Niches intéressantes selon Claude"
-argument-hint: "[nb de niches | catégorie ciblée, ex: 8 | doudounes techniques]"
-allowed-tools: WebSearch, WebFetch, mcp__Notion__notion-search, mcp__Notion__notion-fetch, mcp__Notion__notion-create-pages, mcp__Notion__notion-query-data-sources, Bash, Read, Write
+description: Scan de niches resell Vinted (sans tokens) → Notion "Niches intéressantes selon Claude"
+argument-hint: "[catalog_id] | dry | --min-favs 20 --max-age-days 21"
+allowed-tools: Bash, Read, mcp__Notion__notion-fetch, mcp__Notion__notion-create-pages
 ---
 
-# /prime — Scan de niches resell → Notion
+# /prime — Scan de niches resell (Vinted, sans tokens IA)
 
-Tu es mon assistant de veille **resell** (coulisse privée qui finance, jamais un sujet vidéo).
-Quand je tape `/prime`, tu réalises un **scan de niches** : tu trouves de **nouvelles marques /
-niches** intéressantes à revendre, et tu les enregistres directement comme sous-pages dans ma page
-Notion **« Niches intéressantes selon Claude »**.
+Quand je tape `/prime`, tu déclenches un **scan de niches** resell (coulisse privée, jamais un
+sujet vidéo). Le scan lui-même **ne doit consommer aucun token IA** : tout le travail Vinted est
+fait par le script `scripts/scan_niches.py`. Tu ne fais que le lancer, puis écrire les nouvelles
+niches dans Notion.
 
-- Page Notion cible (parent des sous-pages) :
-  `https://app.notion.com/p/37a2c750db1e80efb0fde5a5b995f896`
-  (ID : `37a2c750-db1e-80ef-b0fd-e5a5b995f896`, arbo : Business ▸ Resell ▸ Niches ▸ Niche China)
-- Argument optionnel `$ARGUMENTS` : nombre de niches à trouver (défaut **6**) et/ou une catégorie à
-  cibler (ex : `10 maroquinerie`, `doudounes techniques`, `montres`). Si vide → 6 niches, catégories libres.
+- Page Notion cible : `https://app.notion.com/p/37a2c750db1e80efb0fde5a5b995f896`
+  (ID `37a2c750-db1e-80ef-b0fd-e5a5b995f896`).
+- `$ARGUMENTS` : un `catalog_id` Vinted (sous-catégorie précise) et/ou des options du script
+  (`--min-favs`, `--max-age-days`, `--min-articles`). Si `dry` est passé → ne pas écrire dans Notion.
 
----
+## Règles du scan (déjà codées dans le script — ne pas les refaire à la main / au LLM)
 
-## Profil d'une bonne niche (le filtre de tout)
+- On choisit **une catégorie + une sous-catégorie précises** sur Vinted (`--catalog-id`).
+- Un article n'est retenu que s'il a **≥ 20 favoris** ET date de **moins de 3 semaines**.
+- Les marques avec assez d'articles chauds = niches ; on **écarte les marques déjà dans Notion**.
+- Analyse prix façon **C3PO** : vente moyenne, achat = vente ÷ 3, marge brute, favoris moyens.
 
-Déduit des niches déjà présentes (Herno, Parajumpers, Woolrich, Officine Creative, Grand Seiko,
-DÔEN, Our Legacy, Coperni, Marni, Red Wing, Gianvito Rossi…). Une niche est retenue **seulement si**
-elle coche l'essentiel :
+## Déroulé
 
-1. **Premium / haut de gamme, mais pas ultra-mainstream** — assez désirable pour avoir de la valeur
-   en seconde main, assez de niche pour garder de la marge (évite Nike/Zara génériques sans angle).
-2. **Fort ratio marge** — grand écart entre prix payé au sourcing (friperie, déstockage, lots,
-   sourcing) et prix de revente constaté.
-3. **Demande réelle et vérifiable** — signal concret : recherches Vinted/Vestiaire, hype TikTok/Pinterest
-   mode, hausse Google Trends, articles. Pas d'intuition sans preuve.
-4. **Sourçable** — on peut réellement en trouver (dispo en friperie/lots/déstockage/sourcing).
-5. **Saturation faible à moyenne** — pas déjà revendue par tout le monde au même prix.
+1. **Choix de la sous-catégorie.** Si `$ARGUMENTS` contient un `catalog_id`, utilise-le. Sinon,
+   choisis une sous-catégorie précise cohérente avec le profil resell (premium, forte marge —
+   ex. manteaux/doudounes homme, maroquinerie, bottes, montres) et indique-la-moi. Pour trouver
+   l'ID : `python scripts/scan_niches.py --list-catalogs`, ou l'URL Vinted `?catalog[]=NNNN`.
 
-⛔ **À exclure** : toute marque **déjà présente** sur la page Notion (dédup stricte) ; les marques
-trop mainstream sans angle de marge ; les contrefaçons.
+2. **Dédup — exporte les marques déjà connues.** Lis la page Notion cible via `notion-fetch`
+   (ID ci-dessus), récupère les titres des sous-pages (marques déjà listées) et écris-les, une par
+   ligne, dans `out/known.txt`. C'est la seule lecture Notion nécessaire.
 
----
+3. **Lance le scan (sans tokens).** Exécute :
+   ```bash
+   python scripts/scan_niches.py --catalog-id <ID> --known-file out/known.txt
+   ```
+   Le script produit `out/niches-<ID>-<date>.json` et `.md`. Ne ré-analyse pas les annonces
+   toi-même : tout est déjà dans le JSON.
+   - Si le script échoue faute d'accès réseau à Vinted, dis-le-moi (il faut le lancer sur une
+     machine où vinted.fr est joignable) et arrête-toi là.
 
-## Déroulé du scan (à exécuter à chaque `/prime`)
+4. **Écris les nouvelles niches dans Notion** (sauf si `dry`). Lis le `.json` et, pour **chaque**
+   niche, crée une sous-page sous la page cible via `notion-create-pages` :
+   - Titre de la page = **nom de la marque**.
+   - Une sous-page « catégorie » (ex. Vêtements / Chaussures / Maroquinerie) contenant :
+     - les **photos** des annonces (`photo` des `samples`, en blocs image),
+     - un **callout** `📊 Analyse prix C3PO (auto)` reprenant exactement les champs du JSON :
+       `N article(s)` · `Prix de vente moyen : X€ (min / max)` · `Prix d'achat estimé (vente ÷3) : Y€`
+       · `Marge brute estimée : Z€` · `Favoris moyens : F`.
 
-1. **Dédup — lis l'existant.** Récupère la liste des sous-pages déjà présentes sur la page cible via
-   `notion-fetch` (ID `37a2c750-db1e-80ef-b0fd-e5a5b995f896`). Construis la liste des marques déjà
-   listées : tu ne dois **jamais** re-proposer l'une d'elles.
+5. **Résumé.** Affiche : sous-catégorie scannée, nb de niches créées, top niches (marque · marge ·
+   favoris), et les marques écartées car déjà connues. N'invente aucun chiffre : tout vient du JSON.
 
-2. **Veille demande & tendances.** Avec `WebSearch` / `WebFetch`, cherche des marques/niches qui
-   montent en seconde main *maintenant* — signaux : « brands that resell well 2026 », tendances
-   Vinted/Vestiaire Collective/Grailed/Depop, hype mode TikTok/Pinterest, Google Trends, déstockages.
-   Si `$ARGUMENTS` cible une catégorie, concentre la recherche dessus. Vérifie chaque piste (2-3 sources).
+## Notes
 
-3. **Filtre & score.** Applique le profil ci-dessus. Écarte tout doublon et tout ce qui ne coche pas
-   l'essentiel. Attribue à chaque niche retenue un **score /10** (demande × marge × faible saturation ×
-   sourçabilité) avec une phrase de justification. Garde les N meilleures (N = arg ou 6).
-
-4. **Écriture Notion.** Pour **chaque** nouvelle niche, crée une **sous-page** sous la page cible via
-   `notion-create-pages` (parent = l'ID ci-dessus). Titre de la page = **nom de la marque / niche**.
-   Contenu de la page selon le template ci-dessous.
-
-5. **Archive locale.** Écris aussi `./out/niches-YYYY-MM-DD.md` avec les niches complètes du run
-   (même contenu que Notion), pour archive et relecture rapide.
-
-6. **Résumé console.** Affiche : nombre de niches créées, la top niche + score, la liste avec liens
-   Notion, et les doublons écartés.
-
----
-
-## Template d'une sous-page niche (contenu Notion)
-
-```
-## 🎯 [Nom de la marque / niche] — score /10
-
-- Catégorie : (maroquinerie / doudounes techniques / sneakers / montres / prêt-à-porter fém. / …)
-- Thèse resell (pourquoi c'est intéressant, en 1-2 phrases)
-- Signal de demande : (source + métrique — ex : X annonces Vinted vendues, hausse Vestiaire, hype TikTok)
-- Prix : retail neuf ~ __ € → seconde main constatée ~ __ € → marge estimée
-- Où sourcer : (friperies / lots / déstockage / sourcing …)
-- Où revendre : (Vinted / Vestiaire / Grailed / Depop …)
-- Saturation / concurrence : faible / moyenne / forte (+ pourquoi)
-- Score /10 : __ — justification en une phrase
-- Sources vérifiées : 2-3 URL
-```
-
----
-
-## Contraintes
-
-- **Rien de doublon** : ne crée jamais une page pour une marque déjà présente ; logue-la comme écartée.
-- **Tout vérifié** : chaque niche s'appuie sur des sources réelles (URL). Pas d'invention de chiffres.
-- **Robuste** : si une source échoue, continue avec les autres ; produis toujours au moins quelques niches.
-- Commence par me montrer la **liste courte** (nom + score + une ligne) **avant** d'écrire dans Notion si
-  je lance `/prime dry` ; sinon écris directement puis affiche le résumé.
+- « Sans tokens » = le **scan** (fetch + filtres + analyse prix) est 100 % script. Seule l'écriture
+  de quelques niches dans Notion passe par l'IA, et elle est légère. Pour un run 100 % sans IA,
+  remplis `NOTION_TOKEN` dans `scripts/.env` et laisse le script pousser dans Notion (cf. README).
+- `/prime dry <ID>` : montre la liste des niches trouvées **sans** écrire dans Notion (validation).
