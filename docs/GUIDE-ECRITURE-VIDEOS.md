@@ -199,6 +199,7 @@ n'utilises jamais ») → l'engagement commentaire pousse la vidéo → teaser d
 | R9 | **Titre = vraie question, zéro putaclic** | Sérieux, fiable, honnête (cf. §4). |
 | R11 | **Slot actu** | Garder une place réservée à l'actu chaude 🌡️ dans le planning. |
 | R13 | **Faire réfléchir** | La vidéo doit faire réfléchir et remettre en question (cf. §5). |
+| R14 | **Cohérence / fil unique** | La vidéo a un SENS d'ensemble. Tout s'enchaîne (cf. §10), pas de phrases juxtaposées. |
 | — | **Ancrage vécu réel** | Chiffres et anecdotes **vraies** du parcours (étudiant, projets tech, sport). Jamais de conseil d'influenceur générique. |
 | — | **Un message par vidéo** | Une seule idée-noyau, formulée en une phrase, transmise clairement. |
 | — | **Anti-répétition** | Jamais deux fois le même thème d'une semaine sur l'autre. |
@@ -221,6 +222,7 @@ Coche tout. Une case vide = on ne tourne pas.
 - [ ] Corps = **preuves datées** (marques, chiffres, démo). Un fait marquant / ~30 s.
 - [ ] **Nuance obligatoire** présente (R8).
 - [ ] **Chute** = phrase qui reste + question ouverte face cam (R13).
+- [ ] **Fil logique unique** — tout s'enchaîne, aucune phrase déplaçable, une seule idée-noyau (R14).
 - [ ] **3–4 Shorts** découpés.
 - [ ] **Sources** vérifiées et listées.
 - [ ] Grand public ? sinon reformulé large ou basculé en Short. Pas de sujet interdit (resell).
@@ -266,3 +268,24 @@ CTA (abonne-toi + commentaire précis + teaser suivant) :
 
 *Fin du guide. Doc vivant : à mettre à jour quand une nouvelle inspi ou une nouvelle règle entre
 dans la ligne éditoriale.*
+
+---
+
+## 10. 🧭 Loi de COHÉRENCE (R14 — la plus importante à l'écriture)
+
+**Une vidéo doit avoir un SENS d'ensemble, pas des phrases posées les unes à côté des
+autres.** Tout doit être **successif et bien enchaîné** : chaque phrase découle de la
+précédente et prépare la suivante, du cold open jusqu'à la chute.
+
+- **Un seul fil, une seule idée-noyau.** Si tu ne peux pas résumer la vidéo en une phrase,
+  elle part dans tous les sens → recoupe.
+- **Succession logique.** Chaque segment répond à « pourquoi cette phrase vient MAINTENANT ? ».
+  On construit une **démonstration**, pas un patchwork d'infos.
+- **Transitions = ponts** (« donc », « mais », « sauf que », « c'est là que… »), jamais des
+  ruptures sèches. C'est aussi le point de décrochage n°1 en rétention : soigne chaque
+  transition comme un micro-hook.
+- **Test à voix haute.** Lis le script en entier : si une phrase peut être déplacée ailleurs
+  sans rien changer, elle est mal placée ou inutile. Si le viewer ne peut pas reformuler ton
+  propos à la fin, tu as aligné des idées sans les relier.
+- **Rien de décoratif.** Chaque partie sert le message final. On coupe tout ce qui ne fait
+  pas avancer le fil.
