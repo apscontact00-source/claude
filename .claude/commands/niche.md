@@ -46,10 +46,13 @@ il faut lancer le script sur une machine où vinted.fr est accessible.
 ## Étape 4 — Tu écris dans Notion (sauf dry-run)
 
 Pour **chaque** niche du JSON, crée une sous-page sous la page cible via `notion-create-pages` :
-- Titre = **nom de la marque** ; une sous-page catégorie (Vêtements / Chaussures / Maroquinerie…)
-  contenant les **photos** des `samples` (blocs image) + un **callout** `📊 Analyse prix C3PO (auto)`
-  reprenant exactement le JSON : `N article(s)` · `Prix de vente moyen : X€ (min / max)` ·
+- Titre = **nom de la marque** ; une sous-page catégorie (Vêtements / Chaussures / Sacs…)
+  contenant, pour **5 à 8 articles** (`samples`) : la **photo** (bloc image) + les infos fiables
+  tirées de la fiche — **modèle/couleur** (`title`), **taille** (`size`), **état** (`status`),
+  **prix**, **favoris**, lien. Puis un **callout** `📊 Analyse prix C3PO (auto)` reprenant
+  exactement le JSON : `N article(s)` · `Prix de vente moyen : X€ (min / max)` ·
   `Prix d'achat estimé (vente ÷3) : Y€` · `Marge brute estimée : Z€` · `Favoris moyens : F`.
+  N'ajoute que des infos présentes dans le JSON (jamais de modèle/couleur/taille inventés).
 
 ## Étape 5 — Résumé
 

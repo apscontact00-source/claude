@@ -163,7 +163,9 @@ def scan(catalog_id: int, min_favs: int, max_age_days: int,
             hot.append({
                 "id": it.get("id"),
                 "brand": (it.get("brand_title") or "Sans marque").strip(),
-                "title": it.get("title"),
+                "title": it.get("title"),          # porte souvent modèle + couleur
+                "size": it.get("size_title"),      # taille (fiable, depuis la fiche)
+                "status": it.get("status"),        # état (Neuf avec étiquette, Très bon état...)
                 "price": price,
                 "favourites": int(it.get("favourite_count", 0)),
                 "url": it.get("url"),
@@ -240,9 +242,11 @@ def write_outputs(niches: list[dict], catalog_id: int, out_dir: str) -> tuple[st
     for n in niches:
         lines.append(f"## {n['brand']}")
         lines.append(c3po_callout(n))
-        lines.append("\nPhotos / annonces :")
+        lines.append("\nArticles (modèle · taille · état) :")
         for a in n["samples"]:
-            lines.append(f"- {a['favourites']}❤ {a['price']}€ — {a['url']}")
+            meta = " · ".join(str(x) for x in (a.get("title"), a.get("size"), a.get("status")) if x)
+            lines.append(f"- {a['favourites']}❤ {a['price']}€ — {meta}")
+            lines.append(f"  {a['url']}")
             if a["photo"]:
                 lines.append(f"  ![]({a['photo']})")
         lines.append("")
