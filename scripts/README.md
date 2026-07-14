@@ -43,6 +43,45 @@ python scripts/scan_niches.py --catalog-id 1206
 - `--known-file` : un fichier texte, une marque par ligne, des niches déjà dans Notion
   (à écarter). `/prime` peut le générer depuis la page Notion.
 
+## 🚀 Pipeline autonome (0 token IA) — install + scan + Notion en une commande
+
+Tout le flux tourne **sans jamais appeler Claude** : le scan est un script, et l'écriture Notion
+passe par l'**API officielle Notion** (jeton d'intégration), pas par l'IA.
+
+1. Crée une intégration Notion → https://www.notion.so/my-integrations (copie le `secret_...`),
+   puis **partage** la page cible avec cette intégration (menu ••• → *Connexions*).
+2. Lance, sur la machine qui accède à vinted.fr :
+
+```bash
+# macOS / Linux
+NOTION_TOKEN=secret_xxx NOTION_PARENT_PAGE_ID=39c2c750db1e8118af23cb660869b321 \
+  bash scripts/run.sh 16 150          # 16 = catalog_id "Sacs à main femme", 150 = prix mini
+
+# Windows PowerShell
+$env:NOTION_TOKEN="secret_xxx"; $env:NOTION_PARENT_PAGE_ID="39c2c750db1e8118af23cb660869b321"
+powershell -File scripts\run.ps1 -CatalogId 16 -MinPrice 150
+```
+
+`run.sh` installe les dépendances, scanne (navigateur, cookies vidés entre chaque scan), puis crée
+dans Notion une page par marque + sous-page catégorie (photos + callout C3PO). Dédup automatique
+contre les marques déjà présentes sous la page cible.
+
+### Cron (tourne tout seul, sans IA)
+
+```cron
+# tous les jours à 8h — scan sacs + écriture Notion, zéro token
+0 8 * * *  NOTION_TOKEN=secret_xxx NOTION_PARENT_PAGE_ID=39c2c750db1e8118af23cb660869b321 \
+           bash /chemin/vers/repo/scripts/run.sh 16 150 >> /chemin/vers/repo/out/cron.log 2>&1
+```
+
+### Étape Notion seule
+
+Si tu as déjà un `out/niches-*.json` (d'un scan précédent) :
+```bash
+NOTION_TOKEN=secret_xxx python scripts/push_to_notion.py out/niches-16-2026-07-14.json \
+  --parent 39c2c750db1e8118af23cb660869b321 --category Sacs   # --dry pour prévisualiser
+```
+
 ## Version navigateur (anti-bot) — recommandée si tu as un 403
 
 Vinted a un anti-bot (DataDome) qui peut renvoyer **403** à un script `requests` « nu ».
