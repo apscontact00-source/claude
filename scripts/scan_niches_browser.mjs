@@ -62,23 +62,19 @@ function tsOf(it) {
 }
 
 // ---- scan ----------------------------------------------------------------
-async function run() {
-  const launchOpts = { headless: !HEADFUL };
-  if (EXECUTABLE) launchOpts.executablePath = EXECUTABLE;
-  else launchOpts.channel = 'chrome'; // Chrome système sur ta machine
-  const browser = await chromium.launch(launchOpts);
+// Un scan = un contexte navigateur NEUF (cookies vierges), fermé et vidé à la fin.
+async function scanCatalog(browser, catalogId, cutoff) {
   const ctx = await browser.newContext({ locale: 'fr-FR' });
+  await ctx.clearCookies();                       // session vierge avant de commencer
   const page = await ctx.newPage();
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 40000 });
-  await page.waitForTimeout(2500); // laisse l’anti-bot poser ses cookies
+  await page.waitForTimeout(2500);                // laisse l’anti-bot poser ses cookies
 
-  const cutoff = Date.now() / 1000 - MAX_AGE_DAYS * 86400;
   const hot = [];
   let staleStreak = 0;
-
   for (let p = 1; p <= MAX_PAGES; p++) {
     const url =
-      `${BASE}/api/v2/catalog/items?catalog_ids=${CATALOG_ID}` +
+      `${BASE}/api/v2/catalog/items?catalog_ids=${catalogId}` +
       `&order=newest_first&per_page=96&page=${p}` +
       (MIN_PRICE ? `&price_from=${MIN_PRICE}` : '');
     let items;
@@ -89,7 +85,7 @@ async function run() {
         return (await r.json()).items || [];
       }, url);
     } catch (e) {
-      console.error(`  ! page ${p} échouée : ${e.message}`);
+      console.error(`  ! [${catalogId}] page ${p} échouée : ${e.message}`);
       break;
     }
     if (!items.length) break;
@@ -116,6 +112,24 @@ async function run() {
     staleStreak = recent ? 0 : staleStreak + 1;
     if (staleStreak >= 1 && p >= 2) break;
     await page.waitForTimeout(600);
+  }
+  await ctx.clearCookies();                       // supprime les cookies entre chaque scan
+  await ctx.close();
+  return hot;
+}
+
+async function run() {
+  const launchOpts = { headless: !HEADFUL };
+  if (EXECUTABLE) launchOpts.executablePath = EXECUTABLE;
+  else launchOpts.channel = 'chrome'; // Chrome système sur ta machine
+  const browser = await chromium.launch(launchOpts);
+  const cutoff = Date.now() / 1000 - MAX_AGE_DAYS * 86400;
+  // Plusieurs sous-catégories possibles : --catalog-id 16,19,246 → un scan (cookies neufs) par ID.
+  const ids = String(CATALOG_ID).split(',').map((s) => s.trim()).filter(Boolean);
+  let hot = [];
+  for (const id of ids) {
+    console.log(`  → scan catalog ${id} (session vierge, cookies supprimés après)`);
+    hot = hot.concat(await scanCatalog(browser, id, cutoff));
   }
   await browser.close();
   return hot;
@@ -155,7 +169,8 @@ function aggregate(hot, known) {
 function write(niches) {
   fs.mkdirSync(OUT, { recursive: true });
   const day = new Date().toISOString().slice(0, 10);
-  const stem = path.join(OUT, `niches-${CATALOG_ID}-${day}`);
+  const idTag = String(CATALOG_ID).replace(/[^0-9]+/g, '-');
+  const stem = path.join(OUT, `niches-${idTag}-${day}`);
   fs.writeFileSync(stem + '.json', JSON.stringify({ catalog_id: +CATALOG_ID, date: day, niches }, null, 2));
 
   const L = [`# Scan niches — catalog ${CATALOG_ID} — ${day}`,
