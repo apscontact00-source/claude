@@ -1,0 +1,9 @@
+{
+  "name": "niche-scanner",
+  "private": true,
+  "type": "module",
+  "description": "Scan de niches resell Vinted via navigateur (anti-bot).",
+  "dependencies": {
+    "playwright-core": "^1.40.0"
+  }
+}

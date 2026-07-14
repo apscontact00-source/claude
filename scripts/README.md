@@ -43,6 +43,20 @@ python scripts/scan_niches.py --catalog-id 1206
 - `--known-file` : un fichier texte, une marque par ligne, des niches déjà dans Notion
   (à écarter). `/prime` peut le générer depuis la page Notion.
 
+## Version navigateur (anti-bot) — recommandée si tu as un 403
+
+Vinted a un anti-bot (DataDome) qui peut renvoyer **403** à un script `requests` « nu ».
+`scan_niches_browser.mjs` fait le **même scan** mais en pilotant un **vrai Chrome** (comme un
+émulateur web) : il ouvre vinted.fr, hérite des cookies anti-bot, puis interroge l'API depuis la
+page. Mêmes filtres, même sortie `out/`.
+
+```bash
+cd scripts && npm install          # installe playwright-core (Chrome/Chromium requis sur la machine)
+node scripts/scan_niches_browser.mjs --catalog-id <ID> --min-price 150 --known-file out/known.txt
+# options identiques : --min-favs 20 --max-age-days 21 --min-articles 3 --max-pages 8
+#   --executable "/chemin/vers/chrome"  (sinon Chrome système)   --headful (pour regarder)
+```
+
 ## ⚠️ Réseau & compte
 
 - **Aucun compte Vinted requis.** Le script ouvre une **session anonyme** (il récupère un token
